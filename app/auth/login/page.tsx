@@ -1,0 +1,135 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Gift, Loader2, ArrowLeft } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { SnowEffect } from '@/components/snow-effect'
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const supabase = createClient()
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      router.push('/')
+      router.refresh()
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background */}
+      <div className="fixed inset-0 bg-gradient-to-b from-pastel-blue/30 via-background to-pastel-pink/20" />
+      <div className="absolute top-20 left-10 w-32 h-32 bg-christmas-red/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 right-10 w-40 h-40 bg-christmas-green/10 rounded-full blur-3xl" />
+      
+      <SnowEffect />
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Back button */}
+        <Link 
+          href="/"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to home
+        </Link>
+
+        <div className="frosted-glass rounded-3xl p-8 animate-bounce-in">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4 animate-float">
+              <Gift className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">Welcome Back!</h1>
+            <p className="text-muted-foreground mt-2">
+              Sign in to access your Secret Santa lists
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="santa@northpole.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-snow-white/50 border-border/50 focus:border-primary/50 h-12 rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-snow-white/50 border-border/50 focus:border-primary/50 h-12 rounded-xl"
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-destructive bg-destructive/10 rounded-lg p-3 animate-bounce-in">
+                {error}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full christmas-btn bg-primary hover:bg-primary/90 text-primary-foreground h-12 rounded-xl font-semibold"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+
+          {/* Footer */}
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            {"Don't have an account? "}
+            <Link
+              href="/auth/sign-up"
+              className="text-primary hover:underline font-medium"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
