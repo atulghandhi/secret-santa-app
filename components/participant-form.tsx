@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Plus, Trash2, Gift, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,7 @@ export function ParticipantForm({
 }: ParticipantFormProps) {
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   const handleAdd = () => {
     if (!newName.trim()) return
@@ -39,6 +40,11 @@ export function ParticipantForm({
     onAddParticipant(participant)
     setNewName('')
     setNewEmail('')
+    
+    // Focus back on the name input for adding next person
+    setTimeout(() => {
+      nameInputRef.current?.focus()
+    }, 0)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
