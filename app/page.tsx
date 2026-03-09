@@ -4,10 +4,59 @@ import { SecretSantaForm } from '@/components/secret-santa-form'
 import { SnowEffect } from '@/components/snow-effect'
 import { Sparkles } from '@/components/sparkles'
 import { Gift, Heart, TreePine, Star } from 'lucide-react'
+import type { SecretSantaList } from '@/lib/types'
 
-export default async function HomePage() {
+interface HomePageProps {
+  searchParams: Promise<{ list?: string }>
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const resolvedSearchParams = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  let initialList: SecretSantaList | null = null
+
+  // Load list from URL if provided
+  if (resolvedSearchParams.list) {
+    const { data: listData } = await supabase
+      .from('secret_santa_lists')
+      .select(`
+        id,
+        name,
+        user_id,
+        is_guest,
+        created_at,
+        updated_at,
+        participants (id, name, email),
+        exclusions (id, participant_1_id, participant_2_id),
+        pairings (id, giver_id, receiver_id, email_sent)
+      `)
+      .eq('id', resolvedSearchParams.list)
+      .single()
+
+    if (listData) {
+      initialList = {
+        id: listData.id,
+        name: listData.name,
+        userId: listData.user_id,
+        isGuest: listData.is_guest,
+        createdAt: listData.created_at,
+        updatedAt: listData.updated_at,
+        participants: (listData.participants || []).map((p: { id: string; name: string; email: string }) => ({
+          id: p.id,
+          name: p.name,
+          email: p.email || ''
+        })),
+        exclusions: (listData.exclusions || []).map((e: { id: string; participant_1_id: string; participant_2_id: string }) => ({
+          id: e.id,
+          participant1Id: e.participant_1_id,
+          participant2Id: e.participant_2_id
+        })),
+        pairings: []
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -73,7 +122,7 @@ export default async function HomePage() {
         </div>
 
         {/* Secret Santa Form */}
-        <SecretSantaForm user={user} />
+        <SecretSantaForm user={user} initialList={initialList} />
 
         {/* Footer */}
         <footer className="text-center mt-16 pb-8 text-sm text-muted-foreground">
