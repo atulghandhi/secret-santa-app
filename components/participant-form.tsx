@@ -40,6 +40,14 @@ export function ParticipantForm({
     )
   }
 
+  const isDuplicateEmail = (email: string, excludeId?: string) => {
+    const normalized = email.trim().toLowerCase()
+    if (!normalized) return false
+    return participants.some(
+      (p) => p.id !== excludeId && p.email.trim().toLowerCase() === normalized
+    )
+  }
+
   const handleAdd = () => {
     if (!newName.trim()) return
     if (requireEmails && !newEmail.trim()) return
@@ -51,6 +59,11 @@ export function ParticipantForm({
 
     if (newEmail.trim() && !isValidEmail(newEmail)) {
       toast.error('Please enter a valid email address')
+      return
+    }
+
+    if (newEmail.trim() && isDuplicateEmail(newEmail)) {
+      toast.error(`The email "${newEmail.trim()}" is already in the list`)
       return
     }
 
@@ -165,13 +178,24 @@ export function ParticipantForm({
                       <p className="text-xs text-destructive mt-1">Duplicate name</p>
                     )}
                   </div>
-                  <Input
-                    value={participant.email}
-                    onChange={(e) => onUpdateParticipant(participant.id, { email: e.target.value })}
-                    placeholder="Email (optional)"
-                    type="email"
-                    className="bg-snow-white/50 border-border/50"
-                  />
+                  <div>
+                    <Input
+                      value={participant.email}
+                      onChange={(e) => onUpdateParticipant(participant.id, { email: e.target.value })}
+                      placeholder="Email"
+                      type="email"
+                      className={`bg-snow-white/50 border-border/50 ${
+                        (participant.email.trim() && !isValidEmail(participant.email)) || isDuplicateEmail(participant.email, participant.id)
+                          ? 'border-destructive ring-1 ring-destructive/30' : ''
+                      }`}
+                    />
+                    {participant.email.trim() && !isValidEmail(participant.email) && (
+                      <p className="text-xs text-destructive mt-1">Invalid email</p>
+                    )}
+                    {isValidEmail(participant.email) && isDuplicateEmail(participant.email, participant.id) && (
+                      <p className="text-xs text-destructive mt-1">Duplicate email</p>
+                    )}
+                  </div>
                 </div>
                 
                 <Button
