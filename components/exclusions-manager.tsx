@@ -122,7 +122,7 @@ export function ExclusionsManager({
           {exclusions.map((exclusion, index) => (
             <div
               key={exclusion.id}
-              className="flex items-center justify-between bg-destructive/5 rounded-xl px-4 py-3 animate-bounce-in"
+              className="flex items-center justify-between bg-destructive/5 rounded-xl px-4 py-3 animate-bounce-in spring-press"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="flex items-center gap-2 text-sm">

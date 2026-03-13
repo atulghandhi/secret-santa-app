@@ -28,7 +28,7 @@ export function Sparkles({ count = 20 }: { count?: number }) {
   }, [count])
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-40" aria-hidden="true">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
       {sparkles.map((sparkle) => (
         <div
           key={sparkle.id}

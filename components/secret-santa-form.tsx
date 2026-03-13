@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Shuffle, Mail, Eye, Loader2, AlertTriangle, Save, Sparkles } from 'lucide-react'
+import { Shuffle, Loader2, AlertTriangle, Save, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ParticipantForm } from '@/components/participant-form'
 import { ExclusionsManager } from '@/components/exclusions-manager'
@@ -31,7 +30,6 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
   const [listName, setListName] = useState(initialList?.name || `Secret Santa ${new Date().getFullYear()}`)
   const [participants, setParticipants] = useState<Participant[]>(initialList?.participants || [])
   const [exclusions, setExclusions] = useState<Exclusion[]>(initialList?.exclusions || [])
-  const [sendEmails, setSendEmails] = useState(false)
   const [pairings, setPairings] = useState<Pairing[]>(initialList?.pairings || [])
 
   // UI state
@@ -146,14 +144,6 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
 
   // Generate pairings
   const handleGeneratePairings = async () => {
-    if (sendEmails) {
-      const missingEmails = participants.filter((p) => !p.email.trim())
-      if (missingEmails.length > 0) {
-        toast.error(`Please add emails for: ${missingEmails.map((p) => p.name).join(', ')}`)
-        return
-      }
-    }
-
     setIsGenerating(true)
     setEmailsSent(false)
 
@@ -436,7 +426,7 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
         onAddParticipant={handleAddParticipant}
         onRemoveParticipant={handleRemoveParticipant}
         onUpdateParticipant={handleUpdateParticipant}
-        requireEmails={sendEmails}
+        requireEmails={false}
       />
 
       {/* Exclusions */}
@@ -446,36 +436,6 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
         onAddExclusion={handleAddExclusion}
         onRemoveExclusion={handleRemoveExclusion}
       />
-
-      {/* Email toggle */}
-      <div className="frosted-glass rounded-2xl p-6 animate-bounce-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl">
-              {sendEmails ? (
-                <Mail className="w-5 h-5 text-primary" />
-              ) : (
-                <Eye className="w-5 h-5 text-primary" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-foreground">
-                {sendEmails ? 'Send Emails' : 'Reveal on Screen'}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {sendEmails
-                  ? 'Each participant will receive an email with their match'
-                  : 'View pairings on screen (great for in-person reveals!)'}
-              </p>
-            </div>
-          </div>
-          <Switch
-            checked={sendEmails}
-            onCheckedChange={setSendEmails}
-            className="data-[state=checked]:bg-primary"
-          />
-        </div>
-      </div>
 
       {/* Validation error */}
       {validationError && (
@@ -538,8 +498,8 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
       {pairings.length > 0 && (
         <PairingsDisplay
           pairings={pairings}
-          showEmails={sendEmails}
-          onSendEmails={sendEmails ? handleSendEmails : undefined}
+          participants={participants}
+          onSendEmails={handleSendEmails}
           isSendingEmails={isSendingEmails}
           emailsSent={emailsSent}
         />

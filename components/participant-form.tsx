@@ -120,7 +120,7 @@ export function ParticipantForm({
             {participants.map((participant, index) => (
               <div
                 key={participant.id}
-                className="frosted-glass rounded-xl p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center animate-bounce-in"
+                className="frosted-glass rounded-xl p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center animate-bounce-in spring-press"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-secondary text-secondary-foreground font-bold text-sm shrink-0">

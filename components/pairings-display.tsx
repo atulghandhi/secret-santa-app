@@ -1,21 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { Eye, EyeOff, Gift, ArrowRight, Mail, CheckCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Gift, ArrowRight, Mail, CheckCircle, Loader2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Pairing } from '@/lib/types'
+import type { Pairing, Participant } from '@/lib/types'
 
 interface PairingsDisplayProps {
   pairings: Pairing[]
-  showEmails: boolean
-  onSendEmails?: () => Promise<void>
+  participants: Participant[]
+  onSendEmails: () => Promise<void>
   isSendingEmails?: boolean
   emailsSent?: boolean
 }
 
 export function PairingsDisplay({
   pairings,
-  showEmails,
+  participants,
   onSendEmails,
   isSendingEmails = false,
   emailsSent = false
@@ -44,6 +44,9 @@ export function PairingsDisplay({
 
   const allRevealed = pairings.every((p) => revealedPairings.has(p.id))
 
+  const missingEmails = participants.filter((p) => !p.email?.trim())
+  const allHaveEmails = missingEmails.length === 0
+
   return (
     <div className="frosted-glass rounded-2xl p-6 animate-bounce-in">
       <div className="flex items-center justify-between mb-6">
@@ -53,47 +56,43 @@ export function PairingsDisplay({
           </div>
           <div>
             <h3 className="font-bold text-lg text-foreground">Secret Santa Pairings</h3>
-            <p className="text-sm text-muted-foreground">
-              {showEmails ? 'Emails will be sent to each participant' : 'Click to reveal each pairing'}
-            </p>
+            <p className="text-sm text-muted-foreground">Click to reveal each pairing</p>
           </div>
         </div>
 
-        {!showEmails && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={allRevealed ? hideAll : revealAll}
-            className="rounded-xl"
-          >
-            {allRevealed ? (
-              <>
-                <EyeOff className="w-4 h-4 mr-2" />
-                Hide All
-              </>
-            ) : (
-              <>
-                <Eye className="w-4 h-4 mr-2" />
-                Reveal All
-              </>
-            )}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={allRevealed ? hideAll : revealAll}
+          className="rounded-xl"
+        >
+          {allRevealed ? (
+            <>
+              <EyeOff className="w-4 h-4 mr-2" />
+              Hide All
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4 mr-2" />
+              Reveal All
+            </>
+          )}
+        </Button>
       </div>
 
       <div className="space-y-3">
         {pairings.map((pairing, index) => {
-          const isRevealed = showEmails || revealedPairings.has(pairing.id)
+          const isRevealed = revealedPairings.has(pairing.id)
 
           return (
             <div
               key={pairing.id}
-              className={`relative flex items-center gap-4 rounded-xl p-4 transition-all duration-300 cursor-pointer ${
+              className={`relative flex items-center gap-4 rounded-xl p-4 transition-all duration-300 cursor-pointer spring-press ${
                 isRevealed
                   ? 'bg-secondary/50'
                   : 'bg-gradient-to-r from-christmas-red/10 to-christmas-green/10 hover:from-christmas-red/20 hover:to-christmas-green/20'
               }`}
-              onClick={() => !showEmails && toggleReveal(pairing.id)}
+              onClick={() => toggleReveal(pairing.id)}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Giver */}
@@ -130,41 +129,48 @@ export function PairingsDisplay({
                 )}
               </div>
 
-              {/* Reveal button (for non-email mode) */}
-              {!showEmails && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-2 h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleReveal(pairing.id)
-                  }}
-                >
-                  {isRevealed ? (
-                    <EyeOff className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </Button>
-              )}
+              {/* Reveal button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-2 h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleReveal(pairing.id)
+                }}
+              >
+                {isRevealed ? (
+                  <EyeOff className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="w-4 h-4 text-muted-foreground" />
+                )}
+              </Button>
             </div>
           )
         })}
       </div>
 
       {/* Send emails button */}
-      {showEmails && onSendEmails && (
-        <div className="mt-6 pt-6 border-t border-border/50">
-          {emailsSent ? (
-            <div className="flex items-center justify-center gap-2 text-christmas-green">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">All emails sent successfully!</span>
-            </div>
-          ) : (
+      <div className="mt-6 pt-6 border-t border-border/50">
+        {emailsSent ? (
+          <div className="flex items-center justify-center gap-2 text-christmas-green">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">All emails sent successfully!</span>
+          </div>
+        ) : (
+          <>
+            {!allHaveEmails && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>
+                  Missing emails for: {missingEmails.map((p) => p.name).join(', ')}.
+                  Add emails above to send.
+                </span>
+              </div>
+            )}
             <Button
               onClick={onSendEmails}
-              disabled={isSendingEmails}
+              disabled={isSendingEmails || !allHaveEmails}
               className="w-full christmas-btn bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-12"
             >
               {isSendingEmails ? (
@@ -179,9 +185,9 @@ export function PairingsDisplay({
                 </>
               )}
             </Button>
-          )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

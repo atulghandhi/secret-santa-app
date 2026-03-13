@@ -56,7 +56,7 @@ export function PastLists({ lists, onSelectList, onDeleteList, isLoading }: Past
         {lists.map((list, index) => (
           <div
             key={list.id}
-            className="group flex items-center justify-between bg-snow-white/50 hover:bg-snow-white/80 rounded-xl p-4 cursor-pointer transition-all hover:shadow-md animate-bounce-in"
+            className="group flex items-center justify-between bg-snow-white/50 hover:bg-snow-white/80 rounded-xl p-4 cursor-pointer transition-all hover:shadow-md animate-bounce-in spring-press"
             style={{ animationDelay: `${index * 0.05}s` }}
             onClick={() => onSelectList(list)}
           >
