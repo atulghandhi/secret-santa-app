@@ -196,18 +196,7 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
 
   const handleSendEmails = async () => {
     setIsSendingEmails(true)
-
-    const totalEmails = pairings.length
-    const batchesNeeded = Math.ceil(totalEmails / 2)
-    const estimatedSeconds = batchesNeeded > 1 ? (batchesNeeded - 1) : 0
-
-    toast.info(
-      `Sending ${totalEmails} email${totalEmails !== 1 ? 's' : ''}… ` +
-      (estimatedSeconds > 0
-        ? `This may take ~${estimatedSeconds} second${estimatedSeconds !== 1 ? 's' : ''} to respect rate limits.`
-        : 'This will just take a moment.'),
-      { duration: 5000 }
-    )
+    toast.success('Emails on their way! 🎅')
 
     try {
       const response = await fetch('/api/send-emails', {
@@ -233,8 +222,6 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
 
       if (result.failed > 0) {
         toast.warning(`${result.sent} of ${result.total} emails sent. ${result.failed} failed.`)
-      } else {
-        toast.success('All Secret Santa emails sent! 🎅')
       }
     } catch (error) {
       console.error('Error sending emails:', error)
