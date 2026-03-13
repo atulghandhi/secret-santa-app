@@ -101,6 +101,14 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
   // Validation
   useEffect(() => {
     if (participants.length >= 3) {
+      // Check for duplicate names
+      const names = participants.map((p) => p.name.trim().toLowerCase()).filter(Boolean)
+      const duplicateNames = names.filter((n, i) => names.indexOf(n) !== i)
+      if (duplicateNames.length > 0) {
+        setValidationError('Some participants have the same name. Each name must be unique.')
+        return
+      }
+
       const validation = validatePairingPossible(participants, exclusions)
       if (!validation.possible) {
         setValidationError(validation.error || null)
@@ -144,6 +152,25 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
 
   // Generate pairings
   const handleGeneratePairings = async () => {
+    // Warn about missing or invalid emails before generating
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const missingEmails = participants.filter((p) => !p.email.trim())
+    const invalidEmails = participants.filter((p) => p.email.trim() && !emailRegex.test(p.email.trim()))
+
+    if (invalidEmails.length > 0) {
+      toast.error(
+        `Invalid email${invalidEmails.length > 1 ? 's' : ''} for: ${invalidEmails.map((p) => p.name).join(', ')}. Please fix before generating.`
+      )
+      return
+    }
+
+    if (missingEmails.length > 0) {
+      toast.warning(
+        `${missingEmails.length} participant${missingEmails.length > 1 ? 's' : ''} missing email addresses. You can still generate pairings, but won't be able to email everyone.`,
+        { duration: 5000 }
+      )
+    }
+
     setIsGenerating(true)
     setEmailsSent(false)
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { toast } from 'sonner'
 import { Plus, Trash2, Gift, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,9 +27,32 @@ export function ParticipantForm({
   const [newEmail, setNewEmail] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
 
+  const isValidEmail = (email: string) => {
+    if (!email.trim()) return true // empty is ok (optional field)
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  }
+
+  const isDuplicateName = (name: string, excludeId?: string) => {
+    const normalized = name.trim().toLowerCase()
+    if (!normalized) return false
+    return participants.some(
+      (p) => p.id !== excludeId && p.name.trim().toLowerCase() === normalized
+    )
+  }
+
   const handleAdd = () => {
     if (!newName.trim()) return
     if (requireEmails && !newEmail.trim()) return
+
+    if (isDuplicateName(newName)) {
+      toast.error(`"${newName.trim()}" is already in the list`)
+      return
+    }
+
+    if (newEmail.trim() && !isValidEmail(newEmail)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
 
     const participant: Participant = {
       id: crypto.randomUUID(),
@@ -128,16 +152,23 @@ export function ParticipantForm({
                 </div>
                 
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
-                  <Input
-                    value={participant.name}
-                    onChange={(e) => onUpdateParticipant(participant.id, { name: e.target.value })}
-                    placeholder="Name"
-                    className="bg-snow-white/50 border-border/50"
-                  />
+                  <div>
+                    <Input
+                      value={participant.name}
+                      onChange={(e) => onUpdateParticipant(participant.id, { name: e.target.value })}
+                      placeholder="Name"
+                      className={`bg-snow-white/50 border-border/50 ${
+                        isDuplicateName(participant.name, participant.id) ? 'border-destructive ring-1 ring-destructive/30' : ''
+                      }`}
+                    />
+                    {isDuplicateName(participant.name, participant.id) && (
+                      <p className="text-xs text-destructive mt-1">Duplicate name</p>
+                    )}
+                  </div>
                   <Input
                     value={participant.email}
                     onChange={(e) => onUpdateParticipant(participant.id, { email: e.target.value })}
-                    placeholder="Email"
+                    placeholder="Email (optional)"
                     type="email"
                     className="bg-snow-white/50 border-border/50"
                   />
