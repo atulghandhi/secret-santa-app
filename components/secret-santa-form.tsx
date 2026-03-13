@@ -328,6 +328,18 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
   const handleSendEmails = async () => {
     setIsSendingEmails(true)
 
+    const totalEmails = pairings.length
+    const batchesNeeded = Math.ceil(totalEmails / 2)
+    const estimatedSeconds = batchesNeeded > 1 ? (batchesNeeded - 1) : 0
+
+    toast.info(
+      `Sending ${totalEmails} email${totalEmails !== 1 ? 's' : ''}… ` +
+      (estimatedSeconds > 0
+        ? `This may take ~${estimatedSeconds} second${estimatedSeconds !== 1 ? 's' : ''} to respect rate limits.`
+        : 'This will just take a moment.'),
+      { duration: 5000 }
+    )
+
     try {
       const response = await fetch('/api/send-emails', {
         method: 'POST',
@@ -347,8 +359,15 @@ export function SecretSantaForm({ user, initialList }: SecretSantaFormProps) {
         throw new Error(data.error || 'Failed to send emails')
       }
 
+      const result = await response.json()
+
       setEmailsSent(true)
-      toast.success('All Secret Santa emails sent!')
+
+      if (result.failed > 0) {
+        toast.warning(`${result.sent} of ${result.total} emails sent. ${result.failed} failed.`)
+      } else {
+        toast.success('All Secret Santa emails sent! 🎅')
+      }
     } catch (error) {
       console.error('Error sending emails:', error)
       toast.error('Failed to send some emails. Please try again.')

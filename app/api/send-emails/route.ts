@@ -11,6 +11,43 @@ interface RequestBody {
   pairings: PairingEmail[]
 }
 
+const RATE_LIMIT_PER_SECOND = 2
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function sendEmailBatch(
+  batch: PairingEmail[],
+  resendApiKey: string,
+  listName: string
+): Promise<PromiseSettledResult<unknown>[]> {
+  return Promise.allSettled(
+    batch.map(async (pairing) => {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${resendApiKey}`,
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM_EMAIL || 'Secret Santa <onboarding@resend.dev>',
+          to: pairing.giverEmail,
+          subject: `Your Secret Santa Assignment for ${listName}!`,
+          html: generateEmailHtml(pairing, listName),
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`Failed to send email to ${pairing.giverEmail}: ${error}`)
+      }
+
+      return response.json()
+    })
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json()
@@ -40,39 +77,27 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Send emails using Resend
-    const results = await Promise.allSettled(
-      pairings.map(async (pairing) => {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || 'Secret Santa <onboarding@resend.dev>',
-            to: pairing.giverEmail,
-            subject: `Your Secret Santa Assignment for ${listName}!`,
-            html: generateEmailHtml(pairing, listName),
-          }),
-        })
+    // Send emails in rate-limited batches (max 2 per second)
+    const allResults: PromiseSettledResult<unknown>[] = []
 
-        if (!response.ok) {
-          const error = await response.text()
-          throw new Error(`Failed to send email to ${pairing.giverEmail}: ${error}`)
-        }
+    for (let i = 0; i < pairings.length; i += RATE_LIMIT_PER_SECOND) {
+      const batch = pairings.slice(i, i + RATE_LIMIT_PER_SECOND)
+      const batchResults = await sendEmailBatch(batch, resendApiKey, listName)
+      allResults.push(...batchResults)
 
-        return response.json()
-      })
-    )
+      // Wait 1 second before the next batch (skip delay after the last batch)
+      if (i + RATE_LIMIT_PER_SECOND < pairings.length) {
+        await delay(1000)
+      }
+    }
 
-    const successful = results.filter((r) => r.status === 'fulfilled').length
-    const failed = results.filter((r) => r.status === 'rejected').length
+    const successful = allResults.filter((r) => r.status === 'fulfilled').length
+    const failed = allResults.filter((r) => r.status === 'rejected').length
 
     if (failed > 0) {
       console.error(
         '[v0] Some emails failed to send:',
-        results.filter((r) => r.status === 'rejected')
+        allResults.filter((r) => r.status === 'rejected')
       )
     }
 
