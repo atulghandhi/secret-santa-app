@@ -32,9 +32,3 @@ export interface SecretSantaList {
   pairings: Pairing[]
 }
 
-export interface FormState {
-  listName: string
-  participants: Participant[]
-  exclusions: Exclusion[]
-  sendEmails: boolean
-}

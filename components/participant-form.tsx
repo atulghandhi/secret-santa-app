@@ -6,6 +6,7 @@ import { Plus, Trash2, Gift, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { isValidEmail, isDuplicateName, isDuplicateEmail } from '@/lib/validation'
 import type { Participant } from '@/lib/types'
 
 interface ParticipantFormProps {
@@ -27,32 +28,11 @@ export function ParticipantForm({
   const [newEmail, setNewEmail] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
 
-  const isValidEmail = (email: string) => {
-    if (!email.trim()) return true // empty is ok (optional field)
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-  }
-
-  const isDuplicateName = (name: string, excludeId?: string) => {
-    const normalized = name.trim().toLowerCase()
-    if (!normalized) return false
-    return participants.some(
-      (p) => p.id !== excludeId && p.name.trim().toLowerCase() === normalized
-    )
-  }
-
-  const isDuplicateEmail = (email: string, excludeId?: string) => {
-    const normalized = email.trim().toLowerCase()
-    if (!normalized) return false
-    return participants.some(
-      (p) => p.id !== excludeId && p.email.trim().toLowerCase() === normalized
-    )
-  }
-
   const handleAdd = () => {
     if (!newName.trim()) return
     if (requireEmails && !newEmail.trim()) return
 
-    if (isDuplicateName(newName)) {
+    if (isDuplicateName(newName, participants)) {
       toast.error(`"${newName.trim()}" is already in the list`)
       return
     }
@@ -62,7 +42,7 @@ export function ParticipantForm({
       return
     }
 
-    if (newEmail.trim() && isDuplicateEmail(newEmail)) {
+    if (newEmail.trim() && isDuplicateEmail(newEmail, participants)) {
       toast.error(`The email "${newEmail.trim()}" is already in the list`)
       return
     }
@@ -171,10 +151,10 @@ export function ParticipantForm({
                       onChange={(e) => onUpdateParticipant(participant.id, { name: e.target.value })}
                       placeholder="Name"
                       className={`bg-snow-white/50 border-border/50 ${
-                        isDuplicateName(participant.name, participant.id) ? 'border-destructive ring-1 ring-destructive/30' : ''
+                        isDuplicateName(participant.name, participants, participant.id) ? 'border-destructive ring-1 ring-destructive/30' : ''
                       }`}
                     />
-                    {isDuplicateName(participant.name, participant.id) && (
+                    {isDuplicateName(participant.name, participants, participant.id) && (
                       <p className="text-xs text-destructive mt-1">Duplicate name</p>
                     )}
                   </div>
@@ -185,14 +165,14 @@ export function ParticipantForm({
                       placeholder="Email"
                       type="email"
                       className={`bg-snow-white/50 border-border/50 ${
-                        (participant.email.trim() && !isValidEmail(participant.email)) || isDuplicateEmail(participant.email, participant.id)
+                        (participant.email.trim() && !isValidEmail(participant.email)) || isDuplicateEmail(participant.email, participants, participant.id)
                           ? 'border-destructive ring-1 ring-destructive/30' : ''
                       }`}
                     />
                     {participant.email.trim() && !isValidEmail(participant.email) && (
                       <p className="text-xs text-destructive mt-1">Invalid email</p>
                     )}
-                    {isValidEmail(participant.email) && isDuplicateEmail(participant.email, participant.id) && (
+                    {isValidEmail(participant.email) && isDuplicateEmail(participant.email, participants, participant.id) && (
                       <p className="text-xs text-destructive mt-1">Duplicate email</p>
                     )}
                   </div>
