@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Gift, LogIn, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,9 +19,9 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const handleSignOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.refresh()
   }
@@ -29,18 +30,17 @@ export function Header({ user }: HeaderProps) {
     <header className="frosted-glass sticky top-0 z-40 border-b border-border/50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
-        <div 
+        <Link href="/" aria-label="Santa Switch home"
           className="flex items-center gap-3 cursor-pointer group"
-          onClick={() => router.push('/')}
         >
           <div className="p-2 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors animate-float">
             <Gift className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="font-bold text-xl text-foreground">Secret Santa</h1>
+            <span className="font-bold text-xl text-foreground">Santa Switch</span>
             <p className="text-xs text-muted-foreground hidden sm:block">Spread the holiday joy!</p>
           </div>
-        </div>
+        </Link>
 
         {/* Auth buttons */}
         <div className="flex items-center gap-3">
@@ -63,13 +63,11 @@ export function Header({ user }: HeaderProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button
-              variant="outline"
-              onClick={() => router.push('/auth/login')}
-              className="rounded-xl christmas-btn frosted-glass"
-            >
+            <Button variant="outline" asChild className="rounded-xl christmas-btn frosted-glass">
+              <Link href="/auth/login">
               <LogIn className="w-4 h-4 mr-2" />
               Sign In
+              </Link>
             </Button>
           )}
         </div>

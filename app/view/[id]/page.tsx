@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Header } from '@/components/header'
 import { SnowEffect } from '@/components/snow-effect'
 import { Sparkles } from '@/components/sparkles'
+import { AmazonGiftLink } from '@/components/amazon-gift-link'
 import { Gift, ArrowLeft, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
@@ -286,6 +287,7 @@ export default function ViewListPage() {
               </div>
 
               {/* Actions */}
+              <AmazonGiftLink />
               <div className="flex justify-center gap-4 mt-8">
                 <Link href={`/?list=${list.id}`}>
                   <Button 

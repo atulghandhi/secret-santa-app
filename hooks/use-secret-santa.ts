@@ -17,7 +17,6 @@ interface UseSecretSantaOptions {
 
 export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
   const router = useRouter()
-  const supabase = createClient()
 
   // Form state
   const [listName, setListName] = useState(initialList?.name || `Secret Santa ${new Date().getFullYear()}`)
@@ -40,6 +39,8 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
   const loadPastLists = useCallback(async () => {
     if (!user) return
 
+    const supabase = createClient()
+
     setIsLoadingLists(true)
     try {
       const lists = await loadLists(supabase, user.id)
@@ -49,7 +50,7 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
     } finally {
       setIsLoadingLists(false)
     }
-  }, [user, supabase])
+  }, [user])
 
   useEffect(() => {
     loadPastLists()
@@ -81,6 +82,14 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
     setParticipants((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     )
+    if (updates.name !== undefined) {
+      setPairings((prev) => prev.map((pairing) => ({
+        ...pairing,
+        giverName: pairing.giverId === id ? updates.name! : pairing.giverName,
+        receiverName: pairing.receiverId === id ? updates.name! : pairing.receiverName,
+      })))
+    }
+    setEmailsSent(false)
   }
 
   // ---------- Exclusion handlers ----------
@@ -141,7 +150,7 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
 
     try {
       const newListId = await saveList(
-        supabase,
+        createClient(),
         user.id,
         listName,
         currentListId,
@@ -174,7 +183,7 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
 
   const handleDeleteList = async (listId: string) => {
     try {
-      await deleteList(supabase, listId)
+      await deleteList(createClient(), listId)
       setPastLists((prev) => prev.filter((l) => l.id !== listId))
 
       if (currentListId === listId) {
@@ -196,7 +205,6 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
 
   const handleSendEmails = async () => {
     setIsSendingEmails(true)
-    toast.success('Emails on their way! 🎅')
 
     try {
       const response = await fetch('/api/send-emails', {
@@ -218,10 +226,12 @@ export function useSecretSanta({ user, initialList }: UseSecretSantaOptions) {
       }
 
       const result = await response.json()
-      setEmailsSent(true)
+      setEmailsSent(result.failed === 0 && result.sent === pairings.length)
 
       if (result.failed > 0) {
         toast.warning(`${result.sent} of ${result.total} emails sent. ${result.failed} failed.`)
+      } else {
+        toast.success('Secret Santa emails sent!')
       }
     } catch (error) {
       console.error('Error sending emails:', error)

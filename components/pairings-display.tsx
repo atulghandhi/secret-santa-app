@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Gift, ArrowRight, Mail, CheckCircle, Loader2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AmazonGiftLink } from '@/components/amazon-gift-link'
 import type { Pairing, Participant } from '@/lib/types'
 
 interface PairingsDisplayProps {
@@ -185,9 +186,13 @@ export function PairingsDisplay({
                 </>
               )}
             </Button>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              Emails include an Amazon affiliate gift link. Only send to participants who have agreed to receive these emails.
+            </p>
           </>
         )}
       </div>
+      {pairings.length > 0 && <AmazonGiftLink />}
     </div>
   )
 }

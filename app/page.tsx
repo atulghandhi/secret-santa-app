@@ -1,4 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import type { Metadata } from 'next'
+import type { User } from '@supabase/supabase-js'
+import { pageMetadata, privateMetadata, absoluteUrl, SITE_NAME, SITE_DESCRIPTION } from '@/lib/seo'
+import { StructuredData } from '@/components/structured-data'
+import { SecretSantaContent } from '@/components/secret-santa-content'
+import { SiteFooter } from '@/components/site-footer'
 import { loadListById } from '@/lib/supabase/lists'
 import { Header } from '@/components/header'
 import { SecretSantaForm } from '@/components/secret-santa-form'
@@ -10,17 +17,47 @@ interface HomePageProps {
   searchParams: Promise<{ list?: string }>
 }
 
+export async function generateMetadata({ searchParams }: HomePageProps): Promise<Metadata> {
+  const params = await searchParams
+  return {
+    ...pageMetadata({ title: 'Free Secret Santa Generator — Draw Names Online', description: SITE_DESCRIPTION, path: '/' }),
+    ...('list' in params ? privateMetadata : {}),
+  }
+}
+
 export default async function HomePage({ searchParams }: HomePageProps) {
   const resolvedSearchParams = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const cookieStore = await cookies()
+  const hasSession = cookieStore.getAll().some(({ name }) => /^sb-.+-auth-token(?:\.\d+)?$/.test(name))
+  const supabase = hasSession ? await createClient() : null
+  let user: User | null = null
+  if (supabase) {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  }
 
-  const initialList = resolvedSearchParams.list
+  const initialList = resolvedSearchParams.list && user && supabase
     ? await loadListById(supabase, resolvedSearchParams.list)
     : null
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <StructuredData data={{
+        '@context': 'https://schema.org',
+        '@graph': [
+          { '@type': 'WebSite', '@id': absoluteUrl('/#website'), name: SITE_NAME, url: absoluteUrl(), inLanguage: 'en-GB' },
+          {
+            '@type': 'WebApplication', '@id': absoluteUrl('/#generator'),
+            name: 'Santa Switch Secret Santa Generator', url: absoluteUrl(), description: SITE_DESCRIPTION,
+            applicationCategory: 'LifestyleApplication', operatingSystem: 'Any', browserRequirements: 'Requires JavaScript for the name draw.',
+            isAccessibleForFree: true,
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'GBP' },
+            featureList: ['Random Secret Santa name draw', 'Mutual participant exclusions', 'Email assignments', 'Guest mode', 'Saved participant lists with an account'],
+            isPartOf: { '@id': absoluteUrl('/#website') },
+          },
+        ],
+      }} />
+      <a href="#generator" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-background focus:p-3">Skip to the Secret Santa generator</a>
       {/* Background decorations */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Soft gradient background */}
@@ -43,19 +80,19 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {/* Main content */}
       <main className="relative z-10 container mx-auto px-4 py-8 max-w-3xl">
         {/* Hero section */}
-        <div className="text-center mb-12 animate-bounce-in">
+        <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full mb-6 animate-float">
             <Gift className="w-12 h-12 text-primary" />
           </div>
           
           <h1 className="text-4xl sm:text-5xl font-extrabold text-foreground mb-4 text-balance">
-            Secret Santa
-            <span className="text-primary block sm:inline"> Gift Exchange</span>
+            Free Secret Santa
+            <span className="text-primary block"> Generator</span>
           </h1>
           
           <p className="text-lg text-muted-foreground max-w-xl mx-auto text-pretty">
-            Create magical gift exchanges with your friends and family. 
-            Add participants, set exclusions, and let the holiday magic begin!
+            Draw names for your Secret Santa gift exchange online. Add friends, family or colleagues,
+            set exclusions, and email each person their assignment. Start without signing up.
           </p>
 
           {/* Feature badges */}
@@ -83,13 +120,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
 
         {/* Secret Santa Form */}
-        <SecretSantaForm user={user} initialList={initialList} />
+        <section id="generator" aria-label="Secret Santa name generator" className="scroll-mt-28">
+          <div data-nosnippet>
+            <SecretSantaForm user={user} initialList={initialList} />
+          </div>
+        </section>
 
-        {/* Footer */}
-        <footer className="text-center mt-16 pb-8 text-sm text-muted-foreground">
-          <p>Made with <Heart className="w-4 h-4 inline text-christmas-red" /> for the holiday season</p>
-          <p className="mt-2 text-xs">Happy Holidays!</p>
-        </footer>
+        <SecretSantaContent />
+        <SiteFooter />
       </main>
     </div>
   )
